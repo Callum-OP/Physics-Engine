@@ -155,10 +155,10 @@ int main()
       Vec2 movement(0.f, 0.f);
 
       // Move playable box with wasd
-      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::W)) movement.y -= speed;
-      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::S)) movement.y += speed;
-      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::A)) movement.x -= speed;
-      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::D)) movement.x += speed;
+      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::Up) || sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::W)) movement.y -= speed;
+      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::Down) || sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::S)) movement.y += speed;
+      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::Left) || sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::A)) movement.x -= speed;
+      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::Right) || sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::D)) movement.x += speed;
 
         // Try movement
         Vec2 originalPos = A.pos;
