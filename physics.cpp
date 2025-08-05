@@ -107,22 +107,27 @@ float Dot(const Vec2& a, const Vec2& b) {
 // To test the physics engine
 int main()
 {
-    std::vector<Object> colliders;
+    std::vector<Object> wallColliders;
+    std::vector<Object> pickupColliders;
     std::vector<sf::RectangleShape> walls;
+    std::vector<sf::CircleShape> pickups;
 
     // Create game window
     sf::RenderWindow window(sf::VideoMode({800, 600}), "Collision Viewer", sf::Style::Titlebar | sf::Style::Close);
     window.setFramerateLimit(60);
 
-    // Create box objects
+    // Create player object
     Object A = { Vec2(300, 250), { Vec2(-50, -50), Vec2(50, 50) } }; // Playable box
-    Object B = { Vec2(420, 270), { Vec2(-50, -50), Vec2(50, 50) } };
-    Object C = { Vec2(220, 120), { Vec2(-50, -50), Vec2(50, 50) } };
     sf::RectangleShape boxA(sf::Vector2f(100, 100));
     boxA.setPosition(toSF(A.pos));
     boxA.setOutlineThickness(2);
     boxA.setOutlineColor(sf::Color::Green);
     boxA.setFillColor(sf::Color::Transparent);
+
+
+    // Create wall objects
+    Object B = { Vec2(420, 270), { Vec2(-50, -50), Vec2(50, 50) } };
+    Object C = { Vec2(220, 120), { Vec2(-50, -50), Vec2(50, 50) } };
     sf::RectangleShape boxB(sf::Vector2f(100, 100));
     boxB.setPosition(toSF(B.pos));
     boxB.setOutlineThickness(2);
@@ -133,14 +138,37 @@ int main()
     boxC.setOutlineThickness(2);
     boxC.setOutlineColor(sf::Color::White);
     boxC.setFillColor(sf::Color::Transparent);
-    
-    // Group colliders and textures
-    // Make these objects members of the collidable objects
-    colliders.push_back(B);
-    colliders.push_back(C);
-    // Make these objects walls
+
+    // Set up wall objects list
+    // Group wall colliders
+    wallColliders.push_back(B);
+    wallColliders.push_back(C);
+    // Group wall textures
     walls.push_back(boxB);
     walls.push_back(boxC);
+
+
+    // Create pickup objects
+    Object PickA = { Vec2(540, 220), { Vec2(-50, -50), Vec2(50, 50) } };
+    Object PickB = { Vec2(140, 120), { Vec2(-50, -50), Vec2(50, 50) } };
+    sf::CircleShape pickupA(30.f, 30.f);
+    pickupA.setPosition(toSF(PickA.pos));
+    pickupA.setOutlineThickness(1);
+    pickupA.setOutlineColor(sf::Color::Green);
+    pickupA.setFillColor(sf::Color::Green);
+    sf::CircleShape pickupB(30.f, 30.f);
+    pickupB.setPosition(toSF(PickB.pos));
+    pickupB.setOutlineThickness(1);
+    pickupB.setOutlineColor(sf::Color::Green);
+    pickupB.setFillColor(sf::Color::Green);
+    
+    // Set up pickup objects list
+    // Group pickup colliders
+    pickupColliders.push_back(PickA);
+    pickupColliders.push_back(PickB);
+    // Group pickup textures
+    pickups.push_back(pickupA);
+    pickups.push_back(pickupB);
 
     // Ensures window closes properly when closed
     const auto onClose = [&window](const sf::Event::Closed&) {
@@ -166,7 +194,7 @@ int main()
         float originalX = A.pos.x;
         A.pos.x += movement.x;
         // Stop if colliding with object
-        for (auto& obj : colliders) {
+        for (auto& obj : wallColliders) {
             Manifold m = { &A, &obj };
             if (AABBvsAABB(&m)) {
                 A.pos.x = originalX;
@@ -177,11 +205,26 @@ int main()
         float originalY = A.pos.y;
         A.pos.y += movement.y;
         // Stop if colliding with object
-        for (auto& obj : colliders) {
+        for (auto& obj : wallColliders) {
             Manifold m = { &A, &obj };
             if (AABBvsAABB(&m)) {
                 A.pos.y = originalY;
                 break;
+            }
+        }
+
+        // Delete pickup if collided with
+        for (auto it = pickupColliders.begin(); it != pickupColliders.end(); ) {
+            Manifold m = {&A, &(*it)};
+            if (AABBvsAABB(&m)) {
+                pickups.erase(std::remove_if(pickups.begin(), pickups.end(),
+                  [&](const sf::CircleShape& shape) {
+                      return shape.getPosition() == toSF(it->pos);
+                  }), pickups.end());
+                it = pickupColliders.erase(it);
+                break;
+            } else {
+                ++it;
             }
         }
 
@@ -190,6 +233,10 @@ int main()
         // Draw walls
         for (const auto& wall : walls) {
           window.draw(wall);
+        }
+        // Draw pickups
+        for (const auto& pickup : pickups) {
+          window.draw(pickup);
         }
         // Draw playable box
         boxA.setPosition(toSF(A.pos));
