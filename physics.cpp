@@ -98,23 +98,49 @@ sf::Vector2f toSF(const Vec2& v) {
     return sf::Vector2f(v.x, v.y);
 }
 
+// Function to get dot product 
+float Dot(const Vec2& a, const Vec2& b) {
+    return a.x * b.x + a.y * b.y;
+}
+
+
 // To test the physics engine
 int main()
 {
+    std::vector<Object> colliders;
+    std::vector<sf::RectangleShape> walls;
+
     // Create game window
-    sf::RenderWindow window(sf::VideoMode({800, 600}), "AABB Collision Viewer", sf::Style::Titlebar | sf::Style::Close);
+    sf::RenderWindow window(sf::VideoMode({800, 600}), "Collision Viewer", sf::Style::Titlebar | sf::Style::Close);
     window.setFramerateLimit(60);
 
-    Object A = { Vec2(300, 250), { Vec2(-50, -50), Vec2(50, 50) } };
-    Object B = { Vec2(400, 250), { Vec2(-50, -50), Vec2(50, 50) } };
-
-    sf::RectangleShape boxA(sf::Vector2f(100, 100));  // width = max - min
+    // Create box objects
+    Object A = { Vec2(300, 250), { Vec2(-50, -50), Vec2(50, 50) } }; // Playable box
+    Object B = { Vec2(420, 270), { Vec2(-50, -50), Vec2(50, 50) } };
+    Object C = { Vec2(220, 120), { Vec2(-50, -50), Vec2(50, 50) } };
+    sf::RectangleShape boxA(sf::Vector2f(100, 100));
     boxA.setPosition(toSF(A.pos));
     boxA.setOutlineThickness(2);
-
+    boxA.setOutlineColor(sf::Color::Green);
+    boxA.setFillColor(sf::Color::Transparent);
     sf::RectangleShape boxB(sf::Vector2f(100, 100));
     boxB.setPosition(toSF(B.pos));
     boxB.setOutlineThickness(2);
+    boxB.setOutlineColor(sf::Color::White);
+    boxB.setFillColor(sf::Color::Transparent);
+    sf::RectangleShape boxC(sf::Vector2f(100, 100));
+    boxC.setPosition(toSF(C.pos));
+    boxC.setOutlineThickness(2);
+    boxC.setOutlineColor(sf::Color::White);
+    boxC.setFillColor(sf::Color::Transparent);
+    
+    // Group colliders and textures
+    // Make these objects members of the collidable objects
+    colliders.push_back(B);
+    colliders.push_back(C);
+    // Make these objects walls
+    walls.push_back(boxB);
+    walls.push_back(boxC);
 
     // Ensures window closes properly when closed
     const auto onClose = [&window](const sf::Event::Closed&) {
@@ -126,29 +152,48 @@ int main()
       window.handleEvents(onClose);
 
       float speed = 5.f;
+      Vec2 movement(0.f, 0.f);
 
-      // Move box with wasd
-      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::W)) A.pos.y -= speed;
-      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::S)) A.pos.y += speed;
-      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::A)) A.pos.x -= speed;
-      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::D)) A.pos.x += speed;
+      // Move playable box with wasd
+      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::W)) movement.y -= speed;
+      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::S)) movement.y += speed;
+      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::A)) movement.x -= speed;
+      if (sf::Keyboard::isKeyPressed(sf::Keyboard::Scan::D)) movement.x += speed;
 
-        // Compare objects
-        Manifold m = { &A, &B };
-        bool collided = AABBvsAABB(&m);
-
-        // Set up boxes
-        boxA.setOutlineColor(sf::Color::Green);
-        boxB.setOutlineColor(collided ? sf::Color::Red : sf::Color::Green); // Detect collisions
-        boxA.setFillColor(sf::Color::Transparent);
-        boxB.setFillColor(sf::Color::Transparent);
-        boxA.setPosition(toSF(A.pos));
-        boxB.setPosition(toSF(B.pos));
+        // Try movement
+        Vec2 originalPos = A.pos;
+        // --- X axis ---
+        float originalX = A.pos.x;
+        A.pos.x += movement.x;
+        // Stop if colliding with object
+        for (auto& obj : colliders) {
+            Manifold m = { &A, &obj };
+            if (AABBvsAABB(&m)) {
+                A.pos.x = originalX;
+                break;
+            }
+        }
+        // --- Y axis ---
+        float originalY = A.pos.y;
+        A.pos.y += movement.y;
+        // Stop if colliding with object
+        for (auto& obj : colliders) {
+            Manifold m = { &A, &obj };
+            if (AABBvsAABB(&m)) {
+                A.pos.y = originalY;
+                break;
+            }
+        }
 
         // Set up window
         window.clear();
+        // Draw walls
+        for (const auto& wall : walls) {
+          window.draw(wall);
+        }
+        // Draw playable box
+        boxA.setPosition(toSF(A.pos));
         window.draw(boxA);
-        window.draw(boxB);
 
         window.display();
     }
